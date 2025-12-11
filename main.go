@@ -9,7 +9,9 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"log"
+	"net/http"
 	"os"
+	"time"
 )
 
 type CreateUserRequest struct {
@@ -26,6 +28,52 @@ type UserResponse struct {
 	ID         uuid.UUID `json:"id"`
 	Email      string    `json:"email"`
 	Subscribed bool      `json:"subscribed"`
+}
+
+type GetUserResponse struct {
+	ID           uuid.UUID `json:"id"`
+	FirstName    string    `json:"first_name"`
+	LastName     string    `json:"last_name"`
+	Email        string    `json:"email"`
+	PasswordHash string    `json:"passwordhash"`
+	Subscribed   bool      `json:"subscribed"`
+	BirthMonth   string    `json:"birth_month"`
+	BirthYear    int32     `json:"birth_year"`
+}
+
+var users = []GetUserResponse{
+	{
+		ID:           uuid.New(),
+		FirstName:    "Alexandra",
+		LastName:     "Chen",
+		Email:        "alexandra.c@example.com",
+		PasswordHash: "$2a$10$AbCdEfGhIjKlMnOpQrStUvWxYz0123456789./248fHwV3n",
+		Subscribed:   true,
+		BirthMonth:   time.Month(11).String(),
+		BirthYear:    1995,
+	},
+	{
+		ID:        uuid.New(), // Generates a new unique UUID
+		FirstName: "Alex",
+		LastName:  "Chang",
+		Email:     "alex.chang@example.com",
+		// A common bcrypt hash prefix and structure
+		PasswordHash: "$3a$10$AbCdEfGhIjKlMnOpQrStUvWxYz0123456789./248fHwV3n",
+		Subscribed:   true,
+		BirthMonth:   time.Month(11).String(), // November
+		BirthYear:    1995,
+	},
+	{
+		ID:        uuid.New(), // Generates a new unique UUID
+		FirstName: "Lex",
+		LastName:  "Chen",
+		Email:     "lex.c@example.com",
+		// A common bcrypt hash prefix and structure
+		PasswordHash: "$3a$10$AbCdEfGhIjKlMnOpQrStUvWxYz0123456789./248fHwV3n",
+		Subscribed:   false,
+		BirthMonth:   time.Month(11).String(), // November
+		BirthYear:    1995,
+	},
 }
 
 func main() {
@@ -48,6 +96,8 @@ func main() {
 			"message": "pong",
 		})
 	})
+
+	router.GET("/users", getUsers)
 
 	router.POST("/user", func(c *gin.Context) {
 		var req CreateUserRequest
@@ -83,4 +133,8 @@ func main() {
 	})
 
 	router.Run()
+}
+
+func getUsers(c *gin.Context) {
+	c.IndentedJSON(http.StatusOK, users)
 }
