@@ -19,7 +19,7 @@ type CreateUserRequest struct {
 	LastName     string `json:"last_name" binding:"required"`
 	Email        string `json:"email" binding:"required,email"`
 	PasswordHash string `json:"passwordhash" binding:"required"`
-	Subscribed   bool   `json:"subscribed" binding:"required"`
+	Subscribed   bool   `json:"subscribed"`
 	BirthMonth   string `json:"birth_month" binding:"required"`
 	BirthYear    int32  `json:"birth_year" binding:"required"`
 }
@@ -97,9 +97,18 @@ func main() {
 		})
 	})
 
-	router.GET("/users", getUsers)
+	router.GET("/users", func(c *gin.Context) {
+		ctx := c.Request.Context()
+		users, err := dbQueries.GetUsers(ctx)
+		if err != nil {
+			c.JSON(500, gin.H{
+				"message": "unable to connect to database",
+			})
+		}
+		c.IndentedJSON(200, users)
+	})
 
-	router.POST("/user", func(c *gin.Context) {
+	router.POST("/users", func(c *gin.Context) {
 		var req CreateUserRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			log.Fatalf("unable to bind: %v", err.Error())
@@ -130,6 +139,25 @@ func main() {
 		c.JSON(200, gin.H{
 			"message": mes,
 		})
+	})
+
+	router.GET("users/:id", func(c *gin.Context) {
+		param := c.Param("id")
+		id, err := uuid.Parse(param)
+		if err != nil {
+			log.Fatalf("unable to parse the id in the url path to a uuid: %v", err)
+		}
+
+		ctx := c.Request.Context()
+		user, err := dbQueries.GetUserById(ctx, id)
+		if err != nil {
+			c.JSON(404, gin.H{
+				"message": "unable to find a user with that id",
+			})
+		}
+
+		c.IndentedJSON(http.StatusOK, user)
+		//Return a response and the JSON.
 	})
 
 	router.Run()
